@@ -12,8 +12,12 @@ import pylab as pl
 
 class ModelTrainer:
     def __init__(self, discriminator, generator, dataset, loss_fn, discriminatorOptimizer, generatorOptimizer, batch_size, num_epochs):
-        self.discriminator = discriminator
-        self.generator = generator
+
+        device = 'cuda' if torch.cuda.is_available() else 'cpu'
+        self.device = device
+
+        self.discriminator = discriminator.to(device)
+        self.generator = generator.to(device)
         self.discriminatorOptimizer = discriminatorOptimizer
         self.generatorOptimizer = generatorOptimizer
         
@@ -35,12 +39,13 @@ class ModelTrainer:
         '''
         # sampling minibatch of m real samples from data distribution x ~ p_data(x)    
         real_data, _ = next(iter(self.dataloader))
+        real_data = real_data.to(self.device)
         real_data = rearrange(real_data, 'b s c1 c2 -> b s (c1 c2)')
 
         # sampling minibatch of m noise samples from noise prior z ~ p_g(z)
-        noise = torch.normal(mean=0.0, std=1.0, size=(real_data.shape[0], 1, 100))
+        noise = torch.normal(mean=0.0, std=1.0, size=(real_data.shape[0], 1, 100)).to(self.device)
         fake_data = self.generator(noise) # z ~ pg(z)
-        
+
         # Update the discriminator by ascending its stochastic gradient:
         fake = self.discriminator(fake_data)
         real = self.discriminator(real_data)
@@ -50,25 +55,23 @@ class ModelTrainer:
         self.discriminatorOptimizer.step()
 
         # sampling minibatch of m noise samples from noise prior z ~ p_g(z)
-        noise = torch.normal(mean=0.0, std=1.0, size=(real_data.shape[0], 1, 100))
+        noise = torch.normal(mean=0.0, std=1.0, size=(real_data.shape[0], 1, 100)).to(self.device)
         fake_data = self.generator(noise) # z ~ pg(z)
-        
         # Update the generator by descending its stochastic gradient
         fake = self.discriminator(fake_data)
         lossGen = self.loss_fn(fake, torch.ones_like(fake))
         self.generatorOptimizer.zero_grad()
         lossGen.backward()
         self.generatorOptimizer.step()
-
         return
 
     def sampler(self):
         with torch.no_grad():
             # sampling minibatch of m noise samples from noise prior z ~ p_g(z)
-            noise = torch.normal(mean=0.0, std=1.0, size=(1, 1, 100))
+            noise = torch.normal(mean=0.0, std=1.0, size=(1, 1, 100)).to(self.device)
             fake_data = self.generator(noise) # z ~ pg(z)
             fake_data = rearrange(fake_data, 'b s (c1 c2) -> b s c1 c2', c2=28)
-            return fake_data
+            return fake_data.to('cpu')
 
 
 
@@ -102,7 +105,7 @@ if __name__ == '__main__':
     
     plt.ion()
     for i in tqdm(range(500)):       
-        for i in range(1000):
+        for i in range(10):
             trainer.train()
 
         imageSample = trainer.sampler()
