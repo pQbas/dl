@@ -8,10 +8,10 @@ import torch.nn as nn
 from tqdm import tqdm
 from utils import *
 import pylab as pl
-
+import argparse
 
 class ModelTrainer:
-    def __init__(self, discriminator, generator, dataset, loss_fn, discriminatorOptimizer, generatorOptimizer, batch_size, num_epochs):
+    def __init__(self, discriminator, generator, dataset, loss_fn, discriminatorOptimizer, generatorOptimizer, batch_size):
 
         device = 'cuda' if torch.cuda.is_available() else 'cpu'
         self.device = device
@@ -24,7 +24,6 @@ class ModelTrainer:
         self.dataset = dataset
         self.loss_fn = loss_fn
         self.batch_size = batch_size
-        self.num_epochs = num_epochs
 
         self.dataloader = DataLoader(self.dataset, batch_size= self.batch_size, shuffle=True)
 
@@ -76,10 +75,16 @@ class ModelTrainer:
 
 
 if __name__ == '__main__':
-    
+   
+    parser = argparse.ArgumentParser(description='Description of your promgram')
+    parser.add_argument('--batch', type=int, default=64, help='Batch size used during training')
+    parser.add_argument('--lr', type=float, default=0.001, help='Learning rate')
+    parser.add_argument('--epochs', type=int, default=10, help='Number of epochs used during training')
+    parser.add_argument('--show', type=bool, default=False, help='Show an animation during trainig of image generated')
+
+    args = parser.parse_args()
 
     # Create model, dataset, loss function, and optimizer
-
     training_data = datasets.MNIST(
         root="data",
         train=True,
@@ -89,8 +94,8 @@ if __name__ == '__main__':
 
     generator = Generator()
     discriminator = Discriminator()
-    generatorOptimizer = torch.optim.SGD(params=generator.parameters(),lr=0.0001)
-    discriminatorOptimizer = torch.optim.SGD(params=discriminator.parameters(),lr=0.0001)
+    generatorOptimizer = torch.optim.SGD(params=generator.parameters(),lr=args.lr)
+    discriminatorOptimizer = torch.optim.SGD(params=discriminator.parameters(),lr=args.lr)
     lossFunction = nn.BCELoss()
     
     # Create ModelTrainer instance
@@ -100,17 +105,24 @@ if __name__ == '__main__':
                            lossFunction,
                            discriminatorOptimizer, 
                            generatorOptimizer,
-                           batch_size = 150, 
-                           num_epochs = 100)
+                           batch_size = args.batch)
     
-    plt.ion()
-    for i in tqdm(range(500)):       
+    # Training
+    for i in tqdm(range(args.epochs)):
         for i in range(10):
             trainer.train()
 
         imageSample = trainer.sampler()
-        plt.imshow(tensor2image(imageSample[0]))
-        plt.draw()
-        plt.pause(0.001)
-    
-    plt.show(block=True)
+        
+        if args.show: 
+            plt.ion()
+            plt.imshow(tensor2image(imageSample[0]))
+            plt.draw()
+            plt.pause(0.001)
+
+    if args.show:  
+        print('Press key "q" to exit')
+        plt.show(block=True)
+
+
+
