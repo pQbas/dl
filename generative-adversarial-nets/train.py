@@ -9,6 +9,7 @@ from tqdm import tqdm
 from utils import *
 import pylab as pl
 import argparse
+import os
 
 class ModelTrainer:
     def __init__(self, discriminator, generator, dataset, loss_fn, discriminatorOptimizer, generatorOptimizer, batch_size):
@@ -75,15 +76,22 @@ class ModelTrainer:
             fake_data = rearrange(fake_data, 'b s (c1 c2) -> b s c1 c2', c2=28)
             return fake_data.to('cpu')
 
+    def getGenerator(self):
+        return self.generator
+
+    def getDiscriminator(self):
+        return self.discriminator
 
 
 if __name__ == '__main__':
    
     parser = argparse.ArgumentParser(description='Description of your promgram')
-    parser.add_argument('--batch', type=int, default=64, help='Batch size used during training')
+    parser.add_argument('--batch', type=int, default=32, help='Batch size used during training')
     parser.add_argument('--lr', type=float, default=0.001, help='Learning rate')
-    parser.add_argument('--epochs', type=int, default=10, help='Number of epochs used during training')
+    parser.add_argument('--epochs', type=int, default=1, help='Number of epochs used during training')
     parser.add_argument('--show', type=bool, default=False, help='Show an animation during trainig of image generated')
+    parser.add_argument('--save', type=bool, default=True, help='Flag to activate save weights option')
+    parser.add_argument('--path', type=str, default='weights', help='Default folder were to save the model')
 
     args = parser.parse_args()
 
@@ -143,5 +151,18 @@ if __name__ == '__main__':
     if args.show:  
         print('Press key "q" to exit')
         plt.show(block=True)
+
+    # Save weights of the model
+    if not args.save: exit()
+    create_folder_if_not_exists(args.path)
+    torch.save(trainer.getGenerator(), os.path.join(args.path,'generator.pt'))
+    torch.save(trainer.getDiscriminator(), os.path.join(args.path,'discriminator.pt'))
+    print('Trained weights were saved')
+
+
+
+
+
+
 
 
