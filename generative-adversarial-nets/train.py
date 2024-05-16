@@ -62,7 +62,10 @@ class ModelTrainer:
         self.generatorOptimizer.zero_grad()
         lossGen.backward()
         self.generatorOptimizer.step()
-        return
+        return {
+                 'generator': lossGen.item(),
+                 'discriminator': lossDisc.item()
+                }
 
     def sampler(self):
         with torch.no_grad():
@@ -108,21 +111,37 @@ if __name__ == '__main__':
                            batch_size = args.batch)
     
     # Training
+    lossEvolution = {
+                     'discriminator': [],
+                     'generator': [] 
+                    }
+    
+    plt.ion()
+    figure1 = plt.figure()
+    figure2 = plt.figure()
+
     for i in tqdm(range(args.epochs)):
         for i in range(10):
-            trainer.train()
-
+            currentLoss = trainer.train()
+            lossEvolution['discriminator'].append(currentLoss['discriminator'])
+            lossEvolution['generator'].append(currentLoss['generator'])
+            
         imageSample = trainer.sampler()
         
         if args.show: 
-            plt.ion()
+            plt.figure(figure1.number)
+            plt.plot(lossEvolution['discriminator'])
+            plt.plot(lossEvolution['generator'])
+            plt.draw()
+
+            plt.figure(figure2.number)
             plt.imshow(tensor2image(imageSample[0]))
             plt.draw()
-            plt.pause(0.001)
+
+            plt.pause(0.0001)
 
     if args.show:  
         print('Press key "q" to exit')
         plt.show(block=True)
-
 
 
