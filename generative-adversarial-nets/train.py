@@ -88,17 +88,22 @@ if __name__ == '__main__':
    
     parser = argparse.ArgumentParser(description='Description of your promgram')
     parser.add_argument('--batch', type=int, default=32, help='Batch size used during training')
-    parser.add_argument('--lr', type=float, default=0.001, help='Learning rate')
+    parser.add_argument('--lr', type=float, default=0.1, help='Learning rate')
+    parser.add_argument('--momentum', type=float, default=0.5, help='Learning rate')
     parser.add_argument('--epochs', type=int, default=1, help='Number of epochs used during training')
     parser.add_argument('--show', type=bool, default=False, help='Show an animation during trainig of image generated')
     parser.add_argument('--save', type=bool, default=True, help='Flag to activate save weights option')
     parser.add_argument('--path', type=str, default='weights', help='Default folder were to save the model')
+    parser.add_argument('--wandb', type=bool, default=False, help='Flag to use weights and biases')
+    parser.add_argument('--nbatch', type=int, default=-1, help='Number of batches used on training')
+
     args = parser.parse_args()
 
-    wandb.init(project='Generative Adversarial Network Experiments',
-               config={'learning_rate': args.lr, 'epochs': args.epochs, 'batch_size': args.batch})
-               
-   
+    if args.wandb:
+        wandb.init(project='Generative Adversarial Network Experiments',
+                config={'learning_rate': args.lr, 'epochs': args.epochs, 'batch_size': args.batch})
+                
+    
     # Create model, dataset, loss function, and optimizer instances
     training_data = datasets.MNIST(
         root="data",
@@ -109,8 +114,8 @@ if __name__ == '__main__':
 
     generator = Generator()
     discriminator = Discriminator()
-    generatorOptimizer = torch.optim.SGD(params=generator.parameters(), lr=wandb.config['learning_rate'])
-    discriminatorOptimizer = torch.optim.SGD(params=discriminator.parameters(),lr=wandb.config['learning_rate'])
+    generatorOptimizer = torch.optim.SGD(params=generator.parameters(), lr=args.lr, momentum=args.momentum)
+    discriminatorOptimizer = torch.optim.SGD(params=discriminator.parameters(),lr=args.lr, momentum=args.momentum)
     lossFunction = nn.BCELoss()
     
     # Create ModelTrainer instance
@@ -130,28 +135,36 @@ if __name__ == '__main__':
     
     plotter = Plotter(3)
 
+    if args.nbatch <= 0:
+        args.nbatch = len(training_data)//args.batch
+
     for epoch in tqdm(range(wandb.config['epochs'])):
-        for i in range(10):
+        for i in range(args.nBatches):
             currentLoss = trainer.train()
             lossEvolution['discriminator'].append(currentLoss['discriminator'])
             lossEvolution['generator'].append(currentLoss['generator'])
             
         imageSample = trainer.sampler()
-       
-        wandb.log({'discriminator_loss': currentLoss['discriminator'], 
-                   'generator_loss': currentLoss['generator']},
-                    step = epoch
-                  )
+        
+        if args.wandb:
+            wandb.log({'discriminator_loss': currentLoss['discriminator'], 
+                    'generator_loss': currentLoss['generator']},
+                        step = epoch
+                    )
 
-        if args.show: plotter.plot([(0, lossEvolution['discriminator'], 'plot'),
-                                    (1, lossEvolution['generator'], 'plot'),
-                                    (2, tensor2image(imageSample[0]),'imshow')])
+        if args.show: 
+            plotter.plot([(0, lossEvolution['discriminator'], 'plot'),
+                          (1, lossEvolution['generator'], 'plot'),
+                          (2, tensor2image(imageSample[0]),'imshow')])
 
-
-    if args.show: plotter.stop()
+    if args.show: 
+        plotter.stop()
 
     # Save weights of the model
-    if not args.save: exit()
+    if not args.save: 
+        exit()
+
+    # If save flag then save weights
     create_folder_if_not_exists(args.path)
     torch.save(trainer.getGenerator(), os.path.join(args.path,'generator.pt'))
     torch.save(trainer.getDiscriminator(), os.path.join(args.path,'discriminator.pt'))
