@@ -1,4 +1,4 @@
-
+import os
 from torchvision import transforms
 import torch
 import gc
@@ -41,3 +41,38 @@ def image2tensor(image):
     ])
 
     return image2tensor_transformation(image)
+
+def create_folder_if_not_exists(folder_path):
+    if not os.path.exists(folder_path):
+        os.makedirs(folder_path)
+        print(f"Folder '{folder_path}' created successfully.")
+    else:
+        print(f"Folder '{folder_path}' already exists.")
+
+
+class Plotter:
+    def __init__(self, nFigures):
+        plt.ion()
+        self.figures = [plt.figure() for _ in range(nFigures-1)]
+
+
+    def plot(self, data2plot): # information2plot -> (data, datatype)
+ 
+        for (index, data, dataType) in data2plot:
+            plt.figure(index)
+            if 'plot' == dataType: plt.plot(data)
+            elif 'imshow' == dataType: plt.imshow(data)
+            else: print("Doesn't exist the type of plot selected")
+
+        plt.draw()
+        plt.pause(0.001)
+
+    def stop(self):
+        print('Press key "q" to exit')
+        plt.show(block=True)
+
+
+
+
+
+
