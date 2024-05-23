@@ -139,7 +139,7 @@ if __name__ == '__main__':
         args.nbatch = len(training_data)//args.batch
 
     for epoch in tqdm(range(wandb.config['epochs'])):
-        for i in range(args.nBatches):
+        for i in range(args.nbatch):
             currentLoss = trainer.train()
             lossEvolution['discriminator'].append(currentLoss['discriminator'])
             lossEvolution['generator'].append(currentLoss['generator'])
