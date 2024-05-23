@@ -138,21 +138,25 @@ if __name__ == '__main__':
     if args.nbatch <= 0:
         args.nbatch = len(training_data)//args.batch
 
-    for epoch in tqdm(range(wandb.config['epochs'])):
+    for epoch in tqdm(range(args.epochs)):
+        
+        discriminatorLoss, generatorLoss = [],[]
+        
         for i in range(args.nbatch):
             currentLoss = trainer.train()
-            lossEvolution['discriminator'].append(currentLoss['discriminator'])
-            lossEvolution['generator'].append(currentLoss['generator'])
             
-        imageSample = trainer.sampler()
-        
+            discriminatorLoss.append(currentLoss['discriminator'])
+            generatorLoss.append(currentLoss['generator'])
+
         if args.wandb:
-            wandb.log({'discriminator_loss': currentLoss['discriminator'], 
-                    'generator_loss': currentLoss['generator']},
+            wandb.log({'discriminator_loss': np.mean(discriminatorLoss), 
+                    'generator_loss': np.mean(generatorLoss)},
                         step = epoch
                     )
-
-        if args.show: 
+        if args.show:
+            lossEvolution['discriminator'].append(np.mean(discriminatorLoss))
+            lossEvolution['generator'].append(np.mean(generatorLoss))
+            imageSample = trainer.sampler()
             plotter.plot([(0, lossEvolution['discriminator'], 'plot'),
                           (1, lossEvolution['generator'], 'plot'),
                           (2, tensor2image(imageSample[0]),'imshow')])
