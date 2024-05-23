@@ -137,7 +137,7 @@ if __name__ == '__main__':
         wandb.init(project='Generative Adversarial Network Experiments',
                 config={'learning_rate': args.lr, 'epochs': args.epochs, 'batch_size': args.batch, 'number_batches': args.nbatch})
 
-    for epoch in tqdm(range(args.epochs)):
+    for epoch in range(args.epochs):
         
         discriminatorLoss, generatorLoss = [],[]
 
