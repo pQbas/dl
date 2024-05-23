@@ -99,11 +99,6 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
 
-    if args.wandb:
-        wandb.init(project='Generative Adversarial Network Experiments',
-                config={'learning_rate': args.lr, 'epochs': args.epochs, 'batch_size': args.batch})
-                
-    
     # Create model, dataset, loss function, and optimizer instances
     training_data = datasets.MNIST(
         root="data",
@@ -138,11 +133,15 @@ if __name__ == '__main__':
     if args.nbatch <= 0:
         args.nbatch = len(training_data)//args.batch
 
+    if args.wandb:
+        wandb.init(project='Generative Adversarial Network Experiments',
+                config={'learning_rate': args.lr, 'epochs': args.epochs, 'batch_size': args.batch, 'number_batches': args.nbatch})
+
     for epoch in tqdm(range(args.epochs)):
         
         discriminatorLoss, generatorLoss = [],[]
-        
-        for i in range(args.nbatch):
+
+        for i in tqdm(range(args.nbatch)):
             currentLoss = trainer.train()
             
             discriminatorLoss.append(currentLoss['discriminator'])
