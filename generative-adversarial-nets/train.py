@@ -40,6 +40,8 @@ class ModelTrainer:
         '''
         # sampling minibatch of m real samples from data distribution x ~ p_data(x)    
         real_data, _ = next(iter(self.dataloader))
+        indices = torch.randperm(real_data.shape[0])[:self.batch_size]
+        real_data = real_data[indices]
         real_data = real_data.to(self.device)
         real_data = rearrange(real_data, 'b s c1 c2 -> b s (c1 c2)')
 
